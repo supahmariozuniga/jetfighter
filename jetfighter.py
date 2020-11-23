@@ -12,9 +12,23 @@ display.fill(red)
 pygame.display.set_caption("hello")
 
 
-class Player:
+class player:
     lives = 5
     pressed = pygame.key.get_pressed()
+    
+    def __init__(self, up, down, left, right):
+        self.up = pressed(up)
+        self.down = pressed(down)
+        self.left = pressed(left)
+        self.right = pressed(right)
+    
+    def update(self):
+        if self.up:
+            
+
+player1 = player(K_W, K_S, K_A, K_D)
+
+        
 
 while True:
     pygame.display.update()
