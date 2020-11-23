@@ -12,8 +12,9 @@ display.fill(red)
 pygame.display.set_caption("hello")
 
 
-class Player1:
+class Player:
     lives = 5
+    pressed = pygame.key.get_pressed()
 
 while True:
     pygame.display.update()
