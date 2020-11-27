@@ -1,4 +1,4 @@
-import pygame
+import pygame, math
 from pygame.locals import *
 pygame.init()
 
@@ -11,6 +11,7 @@ pygame.display.set_caption("hello")
 
 class Player(pygame.sprite.Sprite):
     lives = 5
+    speed = (5, 5)
 
     def __init__(self, left, right, img):
         super(Player, self).__init__()
@@ -19,11 +20,24 @@ class Player(pygame.sprite.Sprite):
         self.left = left
         self.right = right
 
+
     def update(self, function):
+        # self.rect.move_ip(self.speed)
         if function[self.left]:
+            # self.surface = pygame.transform.rotate(self.surface, .174)
+            # self.rect = self.surface.get_rect()
+            # self.speed = ((self.speed[0] * math.sin(.174)), (self.speed[1] * math.cos(.174)))
+
             self.rect.move_ip(-5, 0)
         if function[self.right]:
-            self.rect.move_ip(5, 0)
+            # self.surface = pygame.transform.rotate(self.surface, -.174)
+            # self.rect = self.surface.get_rect()
+            # self.speed = ((self.speed[0] * math.sin(-.174)), (self.speed[1] * math.cos(-.174)))
+            self.rect.move_ip(5,0)
+        if function[K_w]:
+            self.rect.move_ip(0, -5)
+        if function[K_s]:
+            self.rect.move_ip(0, 5)
 
         if self.rect.left < 0:
             self.rect.left = 0
@@ -60,7 +74,7 @@ while open:
 
     all_sprites.update(pressed)
 
-    display.blit(player1.surface, player1.rect)
+    # display.blit(player1.surface, player1.rect)
     display.blit(player2.surface, player2.rect)
 
     pygame.display.flip()
@@ -70,3 +84,4 @@ while open:
     if pressed[K_p]:
         display.fill((0, 5, 50))
         pygame.draw.circle(display, (0, 0, 255), (250, 250), 75)
+        print(player2.speed)
