@@ -1,47 +1,79 @@
 import pygame, math, random
 from pygame.locals import *
 pygame.init()
-
 vec = pygame.math.Vector2
+
 
 height = 500
 width = 500
 display = pygame.display.set_mode((height, width))
 display.blit(pygame.image.load("space.png"),(0, 0))
-pygame.display.set_caption("hello")
+pygame.display.set_caption("UFO Fighters")
+
 
 class Bullet(pygame.sprite.Sprite):
-    # self.surface = pygame.img.load(img).convert_alpha()
-    # self.rect = self.surface.get_rect()
-
-    def __init__(self, speed):
-        self.speed = speed
+    def __init__(self, speed, x, y, image):
+        super(Bullet, self).__init__()
+        self.image = image
+        self.surface = pygame.image.load(image).convert_alpha()
+        self.rect = self.surface.get_rect()
+        self.speed = vec(speed[0]*1.5, speed[1]*1.5)
+        self.rect.x = x + 10*self.speed[0]
+        self.rect.y = y + 10*self.speed[1]
 
     def update(self):
+        self.rect.move_ip(self.speed)
+        self.rect.x += self.speed[0]
+        self.rect.y += self.speed[1]
         if self.rect.left < 0:
             self.kill()
+            if self.image == "bullet1.png":
+                del player1.bullets[-1]
+            else:
+                del player2.bullets[-1]
         if self.rect.right > width:
             self.kill()
-        if self.rect.top < 0:
-            self.kill()
+            if self.image == "bullet1.png":
+                del player1.bullets[-1]
+            else:
+                del player2.bullets[-1]
         if self.rect.bottom > height:
             self.kill()
+            if self.image == "bullet1.png":
+                del player1.bullets[-1]
+            else:
+                del player2.bullets[-1]
+        if self.rect.top < 0:
+            self.kill()
+            if self.image == "bullet1.png":
+                del player1.bullets[-1]
+            else:
+                del player2.bullets[-1]
+        if pygame.sprite.spritecollide(self, players, False):
+            self.kill()
+            if self.image == "bullet1.png":
+                del player1.bullets[-1]
+            else:
+                del player2.bullets[-1]
+
 
 
 class Player(pygame.sprite.Sprite):
     lives = 5
-    speed = 150
-    rot_speed = 360
+    cooldown = 1000
 
-    def __init__(self, left, right, img, shoot, speed):
+    def __init__(self, left, right, img, shoot, x, y, speed, bullet):
         super(Player, self).__init__()
         self.image = img
-        self.surface = pygame.image.load(img).convert_alpha()
+        self.surface = pygame.image.load(self.image).convert_alpha()
         self.rect = self.surface.get_rect()
         self.left = left
         self.right = right
         self.shoot = shoot
         self.speed = vec(0, speed)
+        self.rect.x = x
+        self.rect.y = y
+        self.bullet_image = bullet
 
 
     def update(self, function):
@@ -50,8 +82,21 @@ class Player(pygame.sprite.Sprite):
             self.speed = self.speed.rotate(-15)
         if function[self.right]:
             self.speed = self.speed.rotate(15)
+
         if function[self.shoot]:
-            self.hold = "L"
+            if self.bullets != "<Group(0 sprites)>":
+                bullet = Bullet(self.speed, self.rect.x, self.rect.y, self.bullet_image)
+                self.bullets.append(bullet)
+                bullets.add(bullet)
+                # self.cooldown = pygame.time.get_ticks()
+
+
+        if pygame.sprite.spritecollide(self, bullets, False):
+            self.lives -= 1
+
+        if pygame.sprite.spritecollide(self, powerups, False):
+            if self.lives < 10:
+                self.lives += 1
 
         if self.rect.left < 0:
             self.rect.left = 0
@@ -61,29 +106,36 @@ class Player(pygame.sprite.Sprite):
             self.rect.top = 0
         if self.rect.bottom > height:
             self.rect.bottom = height
+        self.rect.x += self.speed[0]
+        self.rect.y += self.speed[1]
 
 
-spawns = [[width/4, height/4], [width/2, height/2], [.75*width, .75*height], [width/4, .75*height], [.75*width, height/4]]
 class Powerup(pygame.sprite.Sprite):
     def __init__(self):
         super(Powerup, self).__init__()
         self.surface = pygame.image.load("heart.png").convert_alpha()
         self.rect = self.surface.get_rect()
+        # self.position = random.choice(spawns)
+        # self.rect.x = self.position[0]
+        # self.rect.y = self.position[1]
+        self.rect.x = random.randrange(width)
+        self.rect.y = random.randrange(height)
 
     def update(self):
-        if pygame.sprite.spritecollide(self, Player, False):
+        if pygame.sprite.spritecollide(self, players, False):
             self.kill()
-
 
 
 display.blit(pygame.image.load("space.png"),(0, 0))
 
+player1 = Player(K_LEFT, K_RIGHT, "ufo1.png", K_UP, 0, height, -3, "bullet1.png")
+player2 = Player(K_a, K_d, "ufo2.png", K_w, width, 0, 3, "bullet2.png")
 
-player1 = Player(K_LEFT, K_RIGHT, "jet1.png", K_g, 5)
-player2 = Player(K_a, K_d, "jet2.png", K_m, 5)
-
-player_sprites = pygame.sprite.Group(player1, player2)
-all_sprites = pygame.sprite.Group(player1, player2)
+players = pygame.sprite.Group(player1, player2)
+bullets = pygame.sprite.Group([])
+powerups = pygame.sprite.Group([])
+player1.bullets = []
+player2.bullets = []
 
 
 
@@ -91,8 +143,15 @@ clock = pygame.time.Clock()
 powerspawn = pygame.USEREVENT + 1
 pygame.time.set_timer(powerspawn, 2000)
 
+
+# def gameover_screen():
+
+
 open = True
+game_over = False
 while open:
+    clock.tick(30)
+
     for event in pygame.event.get():
         if pygame.key.get_pressed()[K_ESCAPE]:
             open = False
@@ -101,32 +160,37 @@ while open:
 
         elif event.type == powerspawn:
             powerup = Powerup()
-            display.blit(powerup.surface, random.choice(spawns))
-            all_sprites.add(powerup)
+            powerups.add(powerup)
 
 
-
+    print(player2.lives)
 
     pressed = pygame.key.get_pressed()
 
-    player_sprites.update(pressed)
 
     display.blit(pygame.image.load("space.png"),(0, 0))
 
-    for sprite in all_sprites:
-        display.blit(sprite.surface, sprite.rect)
+    for sprite in players:
+        sprite.update(pressed)
+        display.blit(sprite.surface, [sprite.rect.x, sprite.rect.y])
+        if sprite.lives < 1:
+            sprite.kill()
+            victory_lap = pygame.time.get_ticks()
+            if victory_lap > 10000:
+                open = False
+
+    for sprite in powerups:
+        sprite.update()
+        display.blit(sprite.surface, [sprite.rect.x, sprite.rect.y])
+
+    for sprite in player1.bullets:
+        sprite.update()
+        display.blit(sprite.surface, [sprite.rect.x, sprite.rect.y])
+
+    for sprite in player2.bullets:
+        sprite.update()
+        display.blit(sprite.surface, [sprite.rect.x, sprite.rect.y])
+
 
 
     pygame.display.flip()
-
-    clock.tick(30)
-    #
-    # if pygame.sprite.spritecollide(player1, Powerup, False):
-    #     player1.lives += 1
-    #
-    # if pygame.sprite.spritecollide(player1, Player, False):
-    #     player1.lives = player1.lives - 1
-    #     player2.lives = player2.lives - 1
-    #
-    # if pygame.sprite.spritecollideany(player1, Bullet):
-    #     player1.lives = player1.lives - 1
